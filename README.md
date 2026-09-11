@@ -1,77 +1,77 @@
 # Elder Watch
 
-Um dispositivo que fica com a pessoa idosa e avisa a família pelo Telegram quando algo acontece. Ele percebe sozinho se a pessoa caiu, tem um botão de emergência para acionamento manual e ainda funciona como lembrete de remédio.
+A device that stays with an elderly person and notifies the family through Telegram when something happens. It detects falls on its own, has an emergency button for manual triggering, and also works as a medication reminder.
 
-A ideia veio de um problema simples: quando um idoso cai sozinho em casa, o tempo até alguém perceber pode ser o que separa um susto de algo grave. Este projeto tenta encurtar esse tempo.
-
----
-
-## O que ele faz
-
-**Percebe quedas automaticamente.** O sensor de movimento acompanha a aceleração e a posição do corpo o tempo todo. Quando identifica o padrão característico de uma queda, dispara o alerta sem que ninguém precise fazer nada.
-
-**Tem um botão de pânico.** Se a pessoa se sentir mal, tonta ou insegura, um toque no botão envia o aviso imediatamente.
-
-**Escuta o ambiente.** Um sensor de som verifica se houve barulho alto no momento da queda, como um grito ou o impacto. Essa informação vai junto na mensagem e ajuda quem recebe a entender a gravidade da situação.
-
-**Avisa pelo Telegram.** A mensagem chega no celular do cuidador com o tipo de ocorrência e o horário exato.
-
-**Lembra dos remédios.** Dá para cadastrar até cinco alarmes com nome e horário. No horário marcado, um LED acende e o buzzer toca por alguns segundos.
-
-**Mostra tudo numa página web.** Basta abrir o endereço do dispositivo no navegador para ver um gráfico do movimento em tempo real, o registro da última queda e a lista de alarmes.
+The idea came from a simple problem: when an older person falls at home alone, the time until someone notices can be what separates a scare from something serious. This project tries to shorten that time.
 
 ---
 
-## Como ele reconhece uma queda
+## What it does
 
-O desafio aqui é distinguir uma queda de verdade de um movimento brusco qualquer. O dispositivo usa dois caminhos diferentes para isso.
+**Detects falls automatically.** The motion sensor tracks acceleration and body position continuously. When it identifies the characteristic pattern of a fall, it fires the alert without anyone having to do anything.
 
-O primeiro imita o que acontece fisicamente numa queda: por uma fração de segundo o corpo entra em queda livre e o sensor registra uma aceleração muito baixa; logo depois vem o impacto contra o chão, um pico brusco. É a **combinação dos dois na sequência certa** que confirma a queda. Se a queda livre acontece mas o impacto não vem logo em seguida, o alerta é cancelado, porque foi só um movimento rápido.
+**Has a panic button.** If the person feels unwell, dizzy, or unsafe, a single press sends the warning immediately.
 
-O segundo caminho é a inclinação. Se o dispositivo detecta que a pessoa está deitada ou muito inclinada e continua assim por vários segundos, ele entende que ela pode ter caído e não conseguiu se levantar.
+**Listens to the room.** A sound sensor checks whether there was a loud noise at the moment of the fall, such as a shout or the impact itself. That information goes along with the message and helps whoever receives it judge how serious the situation is.
 
-Antes de qualquer decisão, os dados do sensor passam por um filtro que suaviza as leituras. Isso evita que uma vibração isolada seja confundida com um acidente.
+**Notifies through Telegram.** The message arrives on the caregiver's phone with the type of event and the exact time.
 
----
+**Reminds about medication.** You can register up to five alarms with a name and a time. At the scheduled time, an LED lights up and the buzzer sounds for a few seconds.
 
-## O que é preciso para montar
-
-- Uma placa **ESP32** (é ela que faz tudo e já vem com Wi-Fi)
-- Um sensor de movimento **MPU6050**
-- Um sensor de som
-- Um buzzer e dois LEDs
-- Um botão
-
-A pinagem de cada componente e os valores de sensibilidade estão comentados no início do código, junto com as bibliotecas necessárias.
+**Shows everything on a web page.** Just open the device's address in a browser to see a real-time motion chart, the record of the last fall, and the list of alarms.
 
 ---
 
-## Colocando para funcionar
+## How it recognizes a fall
 
-1. Monte o circuito seguindo os pinos indicados no código.
-2. Preencha o nome e a senha da sua rede Wi-Fi.
-3. Crie um bot no Telegram conversando com o **@BotFather** e cole o token e o seu ID de conversa no código.
-4. Grave o programa na placa e abra o monitor serial para ver o endereço de IP que apareceu.
-5. Digite esse endereço no navegador de qualquer celular ou computador da mesma rede.
+The challenge here is telling a real fall apart from any sudden movement. The device uses two different paths for that.
 
-Se o Wi-Fi não conectar em quinze segundos, a placa reinicia sozinha e tenta de novo.
+The first mimics what physically happens during a fall: for a fraction of a second the body is in free fall and the sensor registers very low acceleration; right after comes the impact against the floor, a sharp spike. It is the **combination of the two in the right sequence** that confirms the fall. If the free fall happens but the impact doesn't follow shortly after, the alert is cancelled, because it was only a quick movement.
 
-> As senhas e o token ficam escritos direto no código. Antes de publicar o repositório, confira se estão apagados. E se o token verdadeiro já chegou a ser enviado alguma vez, gere um novo pelo BotFather.
+The second path is tilt. If the device detects that the person is lying down or heavily tilted and stays that way for several seconds, it assumes they may have fallen and been unable to get up.
+
+Before any decision, the sensor data passes through a filter that smooths the readings. This prevents an isolated vibration from being mistaken for an accident.
 
 ---
 
-## Ajustando a sensibilidade
+## What you need to build it
 
-Os limites que definem o que conta como queda estão logo no início do arquivo, todos agrupados e comentados. Diminuir o valor de impacto deixa o aparelho mais sensível, mas também aumenta a chance de alarme falso. Vale testar com o dispositivo na posição real em que será usado, porque a resposta muda bastante conforme onde ele fica preso no corpo.
+- An **ESP32** board (it does everything and already includes Wi-Fi)
+- An **MPU6050** motion sensor
+- A sound sensor
+- A buzzer and two LEDs
+- A button
+
+The pinout for each component and the sensitivity values are commented at the top of the code, along with the required libraries.
 
 ---
 
-## Limitações
+## Getting it running
 
-Alguns pontos honestos sobre o estado atual:
+1. Assemble the circuit following the pins indicated in the code.
+2. Fill in your Wi-Fi network name and password.
+3. Create a Telegram bot by talking to **@BotFather** and paste the token and your chat ID into the code.
+4. Flash the program onto the board and open the serial monitor to see the IP address that appears.
+5. Type that address into the browser of any phone or computer on the same network.
 
-- **Os alarmes somem se a placa reiniciar.** Eles ficam guardados só na memória temporária.
-- **O aparelho fica alguns segundos "surdo" depois de um alerta.** Nesse intervalo o gráfico congela e uma segunda queda não seria detectada.
-- **A localização não aparece na mensagem.** O código chega a consultar a posição aproximada, mas ela acaba não sendo incluída no texto enviado.
-- **A posição seria imprecisa de qualquer forma.** A consulta é feita pelo endereço de internet, o que indica a região do provedor e não onde a pessoa está. Para uso de verdade, seria necessário um módulo de GPS.
-- **A página web não tem senha.** Qualquer pessoa conectada à mesma rede consegue criar ou apagar alarmes.
+If Wi-Fi doesn't connect within fifteen seconds, the board restarts on its own and tries again.
+
+> Passwords and the token are written directly in the code. Before publishing the repository, make sure they have been removed. And if the real token was ever pushed at any point, generate a new one through BotFather.
+
+---
+
+## Tuning the sensitivity
+
+The thresholds that define what counts as a fall are at the very beginning of the file, all grouped together and commented. Lowering the impact value makes the device more sensitive, but it also increases the chance of false alarms. It's worth testing with the device in the real position it will be used in, since the response changes considerably depending on where it's attached to the body.
+
+---
+
+## Limitations
+
+Some honest notes about the current state:
+
+- **Alarms are lost if the board restarts.** They are kept only in volatile memory.
+- **The device goes "deaf" for a few seconds after an alert.** During that window the chart freezes and a second fall would not be detected.
+- **Location doesn't appear in the message.** The code does look up the approximate position, but it ends up not being included in the text that gets sent.
+- **The position would be imprecise anyway.** The lookup is done through the internet address, which points to the provider's region rather than where the person actually is. For real-world use, a GPS module would be necessary.
+- **The web page has no password.** Anyone connected to the same network can create or delete alarms.
