@@ -33,10 +33,10 @@ float movimentoHistorico[MAX_DATA_POINTS];
 int movimentoIndex = 0;
 
 // === Configurações de Rede e Telegram === //
-#define BOT_TOKEN "#" 
-#define CHAT_ID "#"                                     
-const char* ssid = "WiFiTest";
-const char* password = "12345678";
+#define BOT_TOKEN "YOUR_BOT_TOKEN"
+#define CHAT_ID "YOUR_CHAT_ID"
+const char* ssid = "YOUR_WIFI_SSID";
+const char* password = "YOUR_WIFI_PASSWORD";
 
 
 // === Parâmetros de Sensibilidade para Detecção de Queda === //

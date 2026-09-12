@@ -1,77 +1,113 @@
 # Elder Watch
 
-A device that stays with an elderly person and notifies the family through Telegram when something happens. It detects falls on its own, has an emergency button for manual triggering, and also works as a medication reminder.
+ESP32 prototype for fall detection, emergency alerts, and medication reminders.
 
-The idea came from a simple problem: when an older person falls at home alone, the time until someone notices can be what separates a scare from something serious. This project tries to shorten that time.
+## Overview
 
----
+Elder Watch explores a simple problem: when an older adult is alone, a fall or other emergency may go unnoticed. The prototype combines motion and sound sensing with a manual emergency button, then sends an alert to a configured Telegram chat. It also hosts a local dashboard for motion monitoring and medication-alarm management.
 
-## What it does
+> **Academic context:** Elder Watch was developed collaboratively as a Software Engineering university project at the Pontifical Catholic University of Paraná (PUCPR).
 
-**Detects falls automatically.** The motion sensor tracks acceleration and body position continuously. When it identifies the characteristic pattern of a fall, it fires the alert without anyone having to do anything.
+## Features
 
-**Has a panic button.** If the person feels unwell, dizzy, or unsafe, a single press sends the warning immediately.
+| Feature | Implementation |
+| --- | --- |
+| Automatic fall alerts | Detects a low-acceleration event followed by impact, or a sustained tilt |
+| Manual emergency alerts | Sends an alert when the physical button is pressed |
+| Sound context | Samples the sound sensor when a fall is detected and reports whether the fixed threshold was reached |
+| Telegram notifications | Sends the event type and timestamp to a configured chat |
+| Medication reminders | Stores up to five daily alarms and activates an LED and buzzer for five seconds |
+| Local web dashboard | Shows recent acceleration data, the last recorded event time, and controls for adding or deleting alarms |
 
-**Listens to the room.** A sound sensor checks whether there was a loud noise at the moment of the fall, such as a shout or the impact itself. That information goes along with the message and helps whoever receives it judge how serious the situation is.
+## How fall detection works
 
-**Notifies through Telegram.** The message arrives on the caregiver's phone with the type of event and the exact time.
+The MPU6050 readings are passed through a five-sample moving-average filter. The sketch then evaluates two detection paths:
 
-**Reminds about medication.** You can register up to five alarms with a name and a time. At the scheduled time, an LED lights up and the buzzer sounds for a few seconds.
+1. **Free fall and impact:** acceleration falls below `1.2 g`, then rises above `2.0 g` within `1.5 seconds`.
+2. **Sustained tilt:** the calculated tilt remains above `45°` for more than `3 seconds`.
 
-**Shows everything on a web page.** Just open the device's address in a browser to see a real-time motion chart, the record of the last fall, and the list of alarms.
+Either path triggers the same fall-alert flow. These thresholds are constants near the top of [`main.ino`](main.ino) and require testing for the intended mounting position and hardware.
 
----
+## Hardware
 
-## How it recognizes a fall
+- ESP32 development board
+- MPU6050 accelerometer/gyroscope module
+- Analog sound sensor
+- Push button
+- Active buzzer
+- Two LEDs with appropriate current-limiting resistors
+- Breadboard and jumper wires, or an equivalent circuit
 
-The challenge here is telling a real fall apart from any sudden movement. The device uses two different paths for that.
+### Pin mapping
 
-The first mimics what physically happens during a fall: for a fraction of a second the body is in free fall and the sensor registers very low acceleration; right after comes the impact against the floor, a sharp spike. It is the **combination of the two in the right sequence** that confirms the fall. If the free fall happens but the impact doesn't follow shortly after, the alert is cancelled, because it was only a quick movement.
+| Component | ESP32 connection | Notes |
+| --- | ---: | --- |
+| Emergency button | GPIO 18 | Configured with the ESP32's internal pull-up resistor |
+| Buzzer | GPIO 19 | Digital output |
+| Alarm LED | GPIO 25 | Medication-reminder indicator |
+| Alert LED | GPIO 5 | Fall and button-alert indicator |
+| Sound sensor | GPIO 33 | Read through `analogRead()` |
+| MPU6050 | Board-default I²C pins | The sketch initializes I²C with `Wire.begin()` |
 
-The second path is tilt. If the device detects that the person is lying down or heavily tilted and stays that way for several seconds, it assumes they may have fallen and been unable to get up.
+## Technologies
 
-Before any decision, the sensor data passes through a filter that smooths the readings. This prevents an isolated vibration from being mistaken for an accident.
+- Arduino framework for ESP32 (C++)
+- MPU6050 sensor library
+- UniversalTelegramBot
+- ArduinoJson
+- ESP32 Wi-Fi, HTTP client, secure client, NTP time, and web-server libraries
+- Chart.js, loaded from a CDN by the device-hosted dashboard
 
----
+## Setup
 
-## What you need to build it
+### 1. Prepare the Arduino environment
 
-- An **ESP32** board (it does everything and already includes Wi-Fi)
-- An **MPU6050** motion sensor
-- A sound sensor
-- A buzzer and two LEDs
-- A button
+Install ESP32 board support in the Arduino IDE, select the correct ESP32 board and port, and install libraries that provide these headers:
 
-The pinout for each component and the sensitivity values are commented at the top of the code, along with the required libraries.
+- `MPU6050.h`
+- `UniversalTelegramBot.h`
+- `ArduinoJson.h`
 
----
+The remaining headers used by the sketch are supplied by the Arduino core, the ESP32 core, or the standard C++ library.
 
-## Getting it running
+### 2. Assemble and configure
 
-1. Assemble the circuit following the pins indicated in the code.
-2. Fill in your Wi-Fi network name and password.
-3. Create a Telegram bot by talking to **@BotFather** and paste the token and your chat ID into the code.
-4. Flash the program onto the board and open the serial monitor to see the IP address that appears.
-5. Type that address into the browser of any phone or computer on the same network.
+1. Wire the components according to the pin table above and the I²C pins for your ESP32 board.
+2. In [`main.ino`](main.ino), replace `YOUR_WIFI_SSID` and `YOUR_WIFI_PASSWORD`.
+3. Create a Telegram bot through [BotFather](https://t.me/BotFather), then replace `YOUR_BOT_TOKEN` and `YOUR_CHAT_ID`.
+4. Upload the sketch and open the Serial Monitor at `115200` baud.
+5. After the ESP32 connects, open the printed IP address from a device on the same local network.
 
-If Wi-Fi doesn't connect within fifteen seconds, the board restarts on its own and tries again.
+The ESP32 restarts and retries if it cannot connect to Wi-Fi within 15 seconds. Telegram alerts, NTP synchronization, IP-based location lookup, and the dashboard's Chart.js asset require internet access.
 
-> Passwords and the token are written directly in the code. Before publishing the repository, make sure they have been removed. And if the real token was ever pushed at any point, generate a new one through BotFather.
+## Configuration
 
----
+Detection thresholds, timing windows, pin assignments, and the maximum number of alarms are defined near the top of [`main.ino`](main.ino). Adjusting them changes sensitivity and may increase false positives or missed detections; validate changes with the assembled prototype.
 
-## Tuning the sensitivity
+Network and Telegram values are compile-time strings. Keep real credentials out of commits, and rotate a bot token if it has ever been published.
 
-The thresholds that define what counts as a fall are at the very beginning of the file, all grouped together and commented. Lowering the impact value makes the device more sensitive, but it also increases the chance of false alarms. It's worth testing with the device in the real position it will be used in, since the response changes considerably depending on where it's attached to the body.
+## Known limitations
 
----
+- Alarms are stored only in memory and are lost when the ESP32 restarts.
+- Alert handling blocks the main loop for 10 seconds; the five-second medication alarm is also blocking. Sensor sampling and web requests pause during these delays.
+- The dashboard has no authentication. Anyone on the same network who can reach the ESP32 can view it and add or delete alarms.
+- The code requests an approximate IP-based location, but the returned link is not included in Telegram messages. IP geolocation is not a precise device location.
+- TLS certificate verification for Telegram is disabled with `client.setInsecure()`, and the location lookup uses plain HTTP.
+- Time is configured with a fixed UTC−3 offset rather than a selectable time zone.
+- Detection and sound thresholds are fixed in code and are not calibrated automatically.
 
-## Limitations
+This is an academic prototype, not a certified medical or emergency-response device.
 
-Some honest notes about the current state:
+## Repository structure
 
-- **Alarms are lost if the board restarts.** They are kept only in volatile memory.
-- **The device goes "deaf" for a few seconds after an alert.** During that window the chart freezes and a second fall would not be detected.
-- **Location doesn't appear in the message.** The code does look up the approximate position, but it ends up not being included in the text that gets sent.
-- **The position would be imprecise anyway.** The lookup is done through the internet address, which points to the provider's region rather than where the person actually is. For real-world use, a GPS module would be necessary.
-- **The web page has no password.** Anyone connected to the same network can create or delete alarms.
+```text
+.
+├── main.ino     # ESP32 firmware and embedded web dashboard
+├── README.md    # Project documentation
+├── .gitignore   # Local and generated-file exclusions
+└── LICENSE      # MIT license
+```
+
+## License
+
+This repository is available under the [MIT License](LICENSE).
